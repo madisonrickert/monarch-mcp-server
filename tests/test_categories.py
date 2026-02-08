@@ -4,22 +4,15 @@ import json
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
-# Mock the monarchmoney module before importing server
-import sys
-sys.modules['monarchmoney'] = MagicMock()
-sys.modules['monarchmoney'].MonarchMoney = MagicMock
-sys.modules['monarchmoney'].RequireMFAException = Exception
-
-from monarch_mcp_server.server import get_categories, get_category_groups
+from monarch_mcp_server.tools.categories import get_categories, get_category_groups
 
 
 class TestGetCategories:
     """Tests for get_categories tool."""
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_get_categories_success(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.categories.get_monarch_client')
+    async def test_get_categories_success(self, mock_get_client):
         """Test successful retrieval of categories."""
-        # Setup mock
         mock_client = AsyncMock()
         mock_client.get_transaction_categories.return_value = {
             "categories": [
@@ -43,10 +36,8 @@ class TestGetCategories:
         }
         mock_get_client.return_value = mock_client
 
-        # Execute
-        result = get_categories()
+        result = await get_categories()
 
-        # Verify
         categories = json.loads(result)
         assert len(categories) == 2
         assert categories[0]["id"] == "cat_123"
@@ -54,34 +45,35 @@ class TestGetCategories:
         assert categories[0]["group"] == "Food & Dining"
         assert categories[1]["is_system_category"] is True
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_get_categories_empty(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.categories.get_monarch_client')
+    async def test_get_categories_empty(self, mock_get_client):
         """Test retrieval when no categories exist."""
         mock_client = AsyncMock()
         mock_client.get_transaction_categories.return_value = {"categories": []}
         mock_get_client.return_value = mock_client
 
-        result = get_categories()
+        result = await get_categories()
 
         categories = json.loads(result)
         assert len(categories) == 0
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_get_categories_error(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.categories.get_monarch_client')
+    async def test_get_categories_error(self, mock_get_client):
         """Test error handling when API fails."""
         mock_get_client.side_effect = RuntimeError("Auth needed")
 
-        result = get_categories()
+        result = await get_categories()
 
-        assert "Error getting categories" in result
-        assert "Auth needed" in result
+        data = json.loads(result)
+        assert data["error"] is True
+        assert "Auth needed" in data["message"]
 
 
 class TestGetCategoryGroups:
     """Tests for get_category_groups tool."""
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_get_category_groups_success(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.categories.get_monarch_client')
+    async def test_get_category_groups_success(self, mock_get_client):
         """Test successful retrieval of category groups."""
         mock_client = AsyncMock()
         mock_client.get_transaction_category_groups.return_value = {
@@ -111,7 +103,7 @@ class TestGetCategoryGroups:
         }
         mock_get_client.return_value = mock_client
 
-        result = get_category_groups()
+        result = await get_category_groups()
 
         groups = json.loads(result)
         assert len(groups) == 2
@@ -120,24 +112,25 @@ class TestGetCategoryGroups:
         assert len(groups[0]["categories"]) == 2
         assert groups[1]["group_level_budgeting_enabled"] is True
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_get_category_groups_empty(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.categories.get_monarch_client')
+    async def test_get_category_groups_empty(self, mock_get_client):
         """Test retrieval when no category groups exist."""
         mock_client = AsyncMock()
         mock_client.get_transaction_category_groups.return_value = {"categoryGroups": []}
         mock_get_client.return_value = mock_client
 
-        result = get_category_groups()
+        result = await get_category_groups()
 
         groups = json.loads(result)
         assert len(groups) == 0
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_get_category_groups_error(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.categories.get_monarch_client')
+    async def test_get_category_groups_error(self, mock_get_client):
         """Test error handling when API fails."""
         mock_get_client.side_effect = RuntimeError("Connection failed")
 
-        result = get_category_groups()
+        result = await get_category_groups()
 
-        assert "Error getting category groups" in result
-        assert "Connection failed" in result
+        data = json.loads(result)
+        assert data["error"] is True
+        assert "Connection failed" in data["message"]

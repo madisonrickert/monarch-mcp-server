@@ -4,20 +4,14 @@ import json
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
-# Mock the monarchmoney module before importing server
-import sys
-sys.modules['monarchmoney'] = MagicMock()
-sys.modules['monarchmoney'].MonarchMoney = MagicMock
-sys.modules['monarchmoney'].RequireMFAException = Exception
-
-from monarch_mcp_server.server import get_tags, set_transaction_tags, create_tag
+from monarch_mcp_server.tools.tags import get_tags, set_transaction_tags, create_tag
 
 
 class TestGetTags:
     """Tests for get_tags tool."""
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_get_tags_success(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.tags.get_monarch_client')
+    async def test_get_tags_success(self, mock_get_client):
         """Test successful retrieval of tags."""
         mock_client = AsyncMock()
         mock_client.get_transaction_tags.return_value = {
@@ -40,7 +34,7 @@ class TestGetTags:
         }
         mock_get_client.return_value = mock_client
 
-        result = get_tags()
+        result = await get_tags()
 
         tags = json.loads(result)
         assert len(tags) == 2
@@ -50,8 +44,8 @@ class TestGetTags:
         assert tags[0]["transaction_count"] == 42
         assert tags[1]["name"] == "Reimbursable"
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_get_tags_empty(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.tags.get_monarch_client')
+    async def test_get_tags_empty(self, mock_get_client):
         """Test retrieval when no tags exist."""
         mock_client = AsyncMock()
         mock_client.get_transaction_tags.return_value = {
@@ -59,26 +53,28 @@ class TestGetTags:
         }
         mock_get_client.return_value = mock_client
 
-        result = get_tags()
+        result = await get_tags()
 
         tags = json.loads(result)
         assert len(tags) == 0
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_get_tags_error(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.tags.get_monarch_client')
+    async def test_get_tags_error(self, mock_get_client):
         """Test error handling."""
         mock_get_client.side_effect = RuntimeError("Auth needed")
 
-        result = get_tags()
+        result = await get_tags()
 
-        assert "Error getting tags" in result
+        data = json.loads(result)
+        assert data["error"] is True
+        assert "Auth needed" in data["message"]
 
 
 class TestSetTransactionTags:
     """Tests for set_transaction_tags tool."""
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_set_tags_success(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.tags.get_monarch_client')
+    async def test_set_tags_success(self, mock_get_client):
         """Test setting tags on a transaction."""
         mock_client = AsyncMock()
         mock_client.set_transaction_tags.return_value = {
@@ -94,7 +90,7 @@ class TestSetTransactionTags:
         }
         mock_get_client.return_value = mock_client
 
-        result = set_transaction_tags(
+        result = await set_transaction_tags(
             transaction_id="txn_123",
             tag_ids=["tag_1", "tag_2"]
         )
@@ -108,8 +104,8 @@ class TestSetTransactionTags:
         data = json.loads(result)
         assert "setTransactionTags" in data
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_set_tags_empty_list(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.tags.get_monarch_client')
+    async def test_set_tags_empty_list(self, mock_get_client):
         """Test removing all tags by passing empty list."""
         mock_client = AsyncMock()
         mock_client.set_transaction_tags.return_value = {
@@ -119,7 +115,7 @@ class TestSetTransactionTags:
         }
         mock_get_client.return_value = mock_client
 
-        result = set_transaction_tags(
+        result = await set_transaction_tags(
             transaction_id="txn_123",
             tag_ids=[]
         )
@@ -129,21 +125,23 @@ class TestSetTransactionTags:
             tag_ids=[]
         )
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_set_tags_error(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.tags.get_monarch_client')
+    async def test_set_tags_error(self, mock_get_client):
         """Test error handling."""
         mock_get_client.side_effect = RuntimeError("API error")
 
-        result = set_transaction_tags("txn_123", ["tag_1"])
+        result = await set_transaction_tags("txn_123", ["tag_1"])
 
-        assert "Error setting tags" in result
+        data = json.loads(result)
+        assert data["error"] is True
+        assert "API error" in data["message"]
 
 
 class TestCreateTag:
     """Tests for create_tag tool."""
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_create_tag_success(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.tags.get_monarch_client')
+    async def test_create_tag_success(self, mock_get_client):
         """Test successful tag creation."""
         mock_client = AsyncMock()
         mock_client.create_transaction_tag.return_value = {
@@ -157,7 +155,7 @@ class TestCreateTag:
         }
         mock_get_client.return_value = mock_client
 
-        result = create_tag(
+        result = await create_tag(
             name="Business Expense",
             color="#9B59B6"
         )
@@ -170,25 +168,27 @@ class TestCreateTag:
         data = json.loads(result)
         assert "createTransactionTag" in data
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_create_tag_default_color(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.tags.get_monarch_client')
+    async def test_create_tag_default_color(self, mock_get_client):
         """Test tag creation with default color."""
         mock_client = AsyncMock()
         mock_client.create_transaction_tag.return_value = {"createTransactionTag": {}}
         mock_get_client.return_value = mock_client
 
-        create_tag(name="My Tag")
+        await create_tag(name="My Tag")
 
         mock_client.create_transaction_tag.assert_called_once_with(
             name="My Tag",
             color="#19D2A5"
         )
 
-    @patch('monarch_mcp_server.server.get_monarch_client')
-    def test_create_tag_error(self, mock_get_client):
+    @patch('monarch_mcp_server.tools.tags.get_monarch_client')
+    async def test_create_tag_error(self, mock_get_client):
         """Test error handling."""
         mock_get_client.side_effect = RuntimeError("API error")
 
-        result = create_tag("Test Tag")
+        result = await create_tag("Test Tag")
 
-        assert "Error creating tag" in result
+        data = json.loads(result)
+        assert data["error"] is True
+        assert "API error" in data["message"]

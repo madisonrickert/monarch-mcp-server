@@ -1,7 +1,15 @@
 """Shared test fixtures for Monarch MCP Server tests."""
 
 import json
-from unittest.mock import AsyncMock, patch
+import sys
+from unittest.mock import AsyncMock, MagicMock, patch
+
+# Mock the monarchmoney module before any monarch_mcp_server imports
+mm_mock = MagicMock()
+mm_mock.MonarchMoney = MagicMock
+mm_mock.RequireMFAException = Exception
+sys.modules.setdefault("monarchmoney", mm_mock)
+sys.modules.setdefault("monarchmoney.monarchmoney", MagicMock())
 
 import pytest
 
@@ -192,7 +200,7 @@ def mock_monarch_client():
 def patch_monarch_client(mock_monarch_client):
     """Automatically patch get_monarch_client for all tests."""
     with patch(
-        "monarch_mcp_server.server.get_monarch_client",
+        "monarch_mcp_server.client.get_monarch_client",
         new_callable=AsyncMock,
         return_value=mock_monarch_client,
     ):

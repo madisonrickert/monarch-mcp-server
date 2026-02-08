@@ -225,7 +225,12 @@ Once authenticated, use these tools directly in Claude Desktop or Claude Code:
 - **Get Budgets**: Access budget information including spent amounts and remaining balances by category
 - **Set Budget Amount**: Create or modify budget amounts for any category or category group
 
-### 📈 Financial Analysis
+### 📈 Net Worth Tracking
+- **Get Net Worth**: Track total net worth over time with daily snapshots and trend analysis
+- **Get Account Balance History**: View historical balance data for any account
+- **Get Net Worth by Account Type**: See net worth breakdown across account types (checking, savings, investments, etc.)
+
+### 📊 Financial Analysis
 - **Get Cashflow**: Analyze financial cashflow over specified date ranges with income/expense breakdowns
 
 ### 🔐 Secure Authentication
@@ -247,6 +252,9 @@ Once authenticated, use these tools directly in Claude Desktop or Claude Code:
 | `get_budgets` | Get budget information | `start_date`, `end_date` |
 | `set_budget_amount` | Set budget for a category | `amount`, `category_id`, `category_group_id`, `start_date`, `apply_to_future` |
 | `get_cashflow` | Get cashflow analysis | `start_date`, `end_date` |
+| `get_net_worth` | Get net worth history | `start_date`, `end_date`, `account_type` |
+| `get_account_balance_history` | Get account balance history | `account_id` |
+| `get_net_worth_by_account_type` | Get net worth by account type | `start_date`, `timeframe` |
 | `get_account_holdings` | Get investment holdings | `account_id` |
 | `create_transaction` | Create new transaction | `account_id`, `amount`, `description`, `date`, `category_id`, `merchant_name` |
 | `update_transaction` | Update existing transaction | `transaction_id`, `amount`, `description`, `category_id`, `date` |
@@ -297,6 +305,21 @@ Set my grocery budget to $600 for this month using set_budget_amount
 ### Apply Budget to All Future Months
 ```
 Set my entertainment budget to $150 and apply it to all future months using set_budget_amount with apply_to_future=true
+```
+
+### Track Net Worth Over Time
+```
+Show my net worth trend for the past year using get_net_worth
+```
+
+### View Account Balance History
+```
+Show me how my savings account balance has changed over time using get_account_balance_history
+```
+
+### Net Worth Breakdown by Account Type
+```
+Show my net worth breakdown by account type using get_net_worth_by_account_type
 ```
 
 ### Analyze Cash Flow

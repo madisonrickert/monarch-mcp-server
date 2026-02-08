@@ -528,6 +528,232 @@ def get_cashflow(
         return f"Error getting cashflow: {str(e)}"
 
 
+# =============================================================================
+# Net Worth Tracking
+# =============================================================================
+
+
+@mcp.tool()
+def get_net_worth(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    account_type: Optional[str] = None,
+) -> str:
+    """
+    Get net worth history over time.
+
+    Returns daily snapshots of total net worth, useful for tracking wealth trends.
+
+    Args:
+        start_date: Start date in YYYY-MM-DD format (defaults to account history start)
+        end_date: End date in YYYY-MM-DD format (defaults to today)
+        account_type: Filter by account type (e.g., "brokerage", "depository", "credit")
+
+    Returns:
+        Daily net worth snapshots with dates and values.
+
+    Examples:
+        Get net worth for the past year:
+            get_net_worth(start_date="2024-01-01")
+
+        Get only investment account net worth:
+            get_net_worth(account_type="brokerage")
+    """
+    try:
+        from datetime import datetime as dt
+
+        async def _get_net_worth():
+            client = await get_monarch_client()
+
+            params = {}
+            if start_date:
+                params["start_date"] = dt.strptime(start_date, "%Y-%m-%d").date()
+            if end_date:
+                params["end_date"] = dt.strptime(end_date, "%Y-%m-%d").date()
+            if account_type:
+                params["account_type"] = account_type
+
+            return await client.get_aggregate_snapshots(**params)
+
+        result = run_async(_get_net_worth())
+
+        # Format the snapshots for display
+        snapshots = result.get("aggregateSnapshots", [])
+
+        formatted = {
+            "snapshot_count": len(snapshots),
+            "snapshots": []
+        }
+
+        # Calculate summary statistics if we have data
+        if snapshots:
+            values = [s.get("balance", 0) for s in snapshots if s.get("balance") is not None]
+            if values:
+                formatted["current_net_worth"] = values[-1] if values else 0
+                formatted["earliest_net_worth"] = values[0] if values else 0
+                formatted["change"] = values[-1] - values[0] if len(values) > 1 else 0
+                formatted["change_percent"] = (
+                    ((values[-1] - values[0]) / values[0] * 100)
+                    if values[0] != 0 and len(values) > 1 else 0
+                )
+                formatted["highest"] = max(values)
+                formatted["lowest"] = min(values)
+
+        # Include snapshot data (limit to avoid huge responses)
+        for snapshot in snapshots[-365:]:  # Last 365 days max
+            formatted["snapshots"].append({
+                "date": snapshot.get("date"),
+                "net_worth": snapshot.get("balance"),
+            })
+
+        return json.dumps(formatted, indent=2, default=str)
+    except Exception as e:
+        logger.error(f"Failed to get net worth: {e}")
+        return f"Error getting net worth: {str(e)}"
+
+
+@mcp.tool()
+def get_account_balance_history(
+    account_id: str,
+) -> str:
+    """
+    Get historical balance data for a specific account.
+
+    Returns all historical balance snapshots for tracking account growth over time.
+
+    Args:
+        account_id: The ID of the account (use get_accounts to find IDs)
+
+    Returns:
+        Historical balance snapshots for the account.
+
+    Examples:
+        Track savings account growth:
+            get_account_balance_history(account_id="acc_123")
+    """
+    try:
+
+        async def _get_history():
+            client = await get_monarch_client()
+            # The API expects an integer account ID
+            return await client.get_account_history(account_id=int(account_id))
+
+        result = run_async(_get_history())
+
+        # Format the history data
+        snapshots = result.get("accountSnapshotHistory", {}).get("snapshots", [])
+
+        formatted = {
+            "account_id": account_id,
+            "snapshot_count": len(snapshots),
+            "snapshots": []
+        }
+
+        # Calculate summary if we have data
+        if snapshots:
+            balances = [s.get("signedBalance", 0) for s in snapshots if s.get("signedBalance") is not None]
+            if balances:
+                formatted["current_balance"] = balances[-1] if balances else 0
+                formatted["earliest_balance"] = balances[0] if balances else 0
+                formatted["change"] = balances[-1] - balances[0] if len(balances) > 1 else 0
+                formatted["highest"] = max(balances)
+                formatted["lowest"] = min(balances)
+
+        # Include snapshot data
+        for snapshot in snapshots:
+            formatted["snapshots"].append({
+                "date": snapshot.get("date"),
+                "balance": snapshot.get("signedBalance"),
+            })
+
+        return json.dumps(formatted, indent=2, default=str)
+    except Exception as e:
+        logger.error(f"Failed to get account balance history: {e}")
+        return f"Error getting account balance history: {str(e)}"
+
+
+@mcp.tool()
+def get_net_worth_by_account_type(
+    start_date: str,
+    timeframe: str = "month",
+) -> str:
+    """
+    Get net worth breakdown by account type over time.
+
+    Shows how net worth is distributed across different account types
+    (checking, savings, investments, credit cards, etc.) with monthly or yearly granularity.
+
+    Args:
+        start_date: Start date in YYYY-MM-DD format
+        timeframe: Granularity - "month" or "year" (default: "month")
+
+    Returns:
+        Net worth snapshots grouped by account type.
+
+    Examples:
+        Get monthly breakdown for the past year:
+            get_net_worth_by_account_type(start_date="2024-01-01", timeframe="month")
+
+        Get yearly breakdown:
+            get_net_worth_by_account_type(start_date="2020-01-01", timeframe="year")
+    """
+    try:
+        if timeframe not in ("month", "year"):
+            return json.dumps({
+                "success": False,
+                "error": "timeframe must be 'month' or 'year'"
+            }, indent=2)
+
+        async def _get_snapshots():
+            client = await get_monarch_client()
+            return await client.get_account_snapshots_by_type(
+                start_date=start_date,
+                timeframe=timeframe
+            )
+
+        result = run_async(_get_snapshots())
+
+        # Format the data by account type
+        account_types = result.get("accountTypeSnapshots", [])
+
+        formatted = {
+            "timeframe": timeframe,
+            "start_date": start_date,
+            "account_types": []
+        }
+
+        for acct_type in account_types:
+            type_info = {
+                "type": acct_type.get("accountType"),
+                "snapshots": []
+            }
+
+            for snapshot in acct_type.get("snapshots", []):
+                type_info["snapshots"].append({
+                    "month": snapshot.get("month"),
+                    "balance": snapshot.get("balance"),
+                })
+
+            # Add current totals
+            if type_info["snapshots"]:
+                type_info["current_balance"] = type_info["snapshots"][-1].get("balance", 0)
+
+            formatted["account_types"].append(type_info)
+
+        # Calculate total current net worth from all types
+        total = sum(
+            t.get("current_balance", 0)
+            for t in formatted["account_types"]
+            if t.get("current_balance") is not None
+        )
+        formatted["total_net_worth"] = total
+
+        return json.dumps(formatted, indent=2, default=str)
+    except Exception as e:
+        logger.error(f"Failed to get net worth by account type: {e}")
+        return f"Error getting net worth by account type: {str(e)}"
+
+
 @mcp.tool()
 def get_account_holdings(account_id: str) -> str:
     """

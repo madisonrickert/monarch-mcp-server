@@ -91,25 +91,93 @@ async def get_monarch_client() -> MonarchMoney:
 @mcp.tool()
 def setup_authentication() -> str:
     """Get instructions for setting up secure authentication with Monarch Money."""
-    return """🔐 Monarch Money - One-Time Setup
+    return """🔐 Monarch Money - Authentication Options
 
-1️⃣ Open Terminal and run:
-   python login_setup.py
+Option 1: Google OAuth (Recommended)
+   Call the 'authenticate_with_google' tool to open a browser
+   and sign in with your Google account.
 
-2️⃣ Enter your Monarch Money credentials when prompted
-   • Email and password
-   • 2FA code if you have MFA enabled
+Option 2: Email/Password (Terminal)
+   Run in terminal: python login_setup.py
 
-3️⃣ Session will be saved automatically and last for weeks
+✅ Session persists across restarts
+✅ Token stored securely in system keyring"""
 
-4️⃣ Start using Monarch tools in Claude Desktop:
-   • get_accounts - View all accounts
-   • get_transactions - Recent transactions
-   • get_budgets - Budget information
 
-✅ Session persists across Claude restarts
-✅ No need to re-authenticate frequently
-✅ All credentials stay secure in terminal"""
+@mcp.tool()
+def authenticate_with_google() -> str:
+    """
+    Open a browser window to authenticate with Monarch Money using Google OAuth.
+
+    This will:
+    1. Open a browser window
+    2. Navigate to Monarch login page
+    3. You sign in with Google (or email/password)
+    4. Token is automatically captured and saved
+
+    Use this when you get authentication errors or need to refresh your session.
+
+    Returns:
+        Success or failure message.
+    """
+    try:
+        import asyncio
+        from playwright.async_api import async_playwright
+
+        async def _authenticate():
+            captured_token = None
+
+            async with async_playwright() as p:
+                # Launch browser in non-headless mode
+                browser = await p.chromium.launch(
+                    headless=False,
+                    args=['--disable-blink-features=AutomationControlled']
+                )
+
+                context = await browser.new_context(
+                    viewport={'width': 1280, 'height': 800},
+                    user_agent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+                )
+
+                page = await context.new_page()
+
+                # Capture auth token from requests
+                async def handle_request(request):
+                    nonlocal captured_token
+                    auth_header = request.headers.get('authorization', '')
+                    if auth_header.startswith('Token ') and not captured_token:
+                        captured_token = auth_header.replace('Token ', '')
+
+                page.on('request', handle_request)
+
+                # Navigate to login
+                await page.goto("https://app.monarch.com/login")
+
+                # Wait for token capture (max 5 minutes)
+                max_wait = 300
+                waited = 0
+                while not captured_token and waited < max_wait:
+                    await asyncio.sleep(1)
+                    waited += 1
+
+                await browser.close()
+
+                if captured_token:
+                    # Save to keyring
+                    secure_session.save_token(captured_token)
+                    return {"success": True, "message": "Authentication successful! Token saved."}
+                else:
+                    return {"success": False, "message": "Timeout - no token captured. Please try again."}
+
+        result = run_async(_authenticate())
+        return json.dumps(result, indent=2)
+
+    except Exception as e:
+        logger.error(f"Authentication failed: {e}")
+        return json.dumps({
+            "success": False,
+            "message": f"Authentication failed: {str(e)}"
+        }, indent=2)
 
 
 @mcp.tool()

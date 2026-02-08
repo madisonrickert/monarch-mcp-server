@@ -192,6 +192,12 @@ Once authenticated, use these tools directly in Claude Desktop or Claude Code:
 - **Set Transaction Tags**: Apply tags to a transaction
 - **Create Tag**: Create a new tag with custom name and color
 
+### 🔍 Advanced Search
+- **Search Transactions**: Comprehensive search with filters for merchant, category, account, tags, date ranges, and amounts
+- **Get Transaction Details**: Retrieve complete details for a single transaction
+- **Delete Transaction**: Remove a transaction
+- **Get Recurring Transactions**: View upcoming recurring transactions
+
 ### 📈 Financial Analysis
 - **Get Budgets**: Access budget information including spent amounts and remaining balances
 - **Get Cashflow**: Analyze financial cashflow over specified date ranges with income/expense breakdowns
@@ -226,6 +232,10 @@ Once authenticated, use these tools directly in Claude Desktop or Claude Code:
 | `get_tags` | List all tags | None |
 | `set_transaction_tags` | Set tags on a transaction | `transaction_id`, `tag_ids` |
 | `create_tag` | Create a new tag | `name`, `color` |
+| `search_transactions` | Search transactions with filters | `search`, `category_ids`, `account_ids`, `tag_ids`, `start_date`, `end_date`, `min_amount`, `max_amount` |
+| `get_transaction_details` | Get details of a transaction | `transaction_id` |
+| `delete_transaction` | Delete a transaction | `transaction_id` |
+| `get_recurring_transactions` | Get recurring transactions | None |
 
 ## 📝 Usage Examples
 
@@ -267,6 +277,16 @@ Categorize these three transactions as "Groceries" using bulk_categorize_transac
 ### Tag a Transaction
 ```
 Add the "Tax Deductible" tag to this transaction using set_transaction_tags
+```
+
+### Search for Transactions
+```
+Find all Amazon transactions over $50 from the last month using search_transactions
+```
+
+### View Recurring Bills
+```
+Show me my upcoming recurring transactions using get_recurring_transactions
 ```
 
 ## 📅 Date Formats

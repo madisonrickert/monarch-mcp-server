@@ -174,6 +174,10 @@ Once authenticated, use these tools directly in Claude Desktop or Claude Code:
 - **Create Transaction**: Add new transactions to accounts
 - **Update Transaction**: Modify existing transactions (amount, description, category, date)
 
+### 🏷️ Category Management
+- **Get Categories**: List all transaction categories with groups, icons, and metadata
+- **Get Category Groups**: View category groups with their associated categories
+
 ### 📈 Financial Analysis
 - **Get Budgets**: Access budget information including spent amounts and remaining balances
 - **Get Cashflow**: Analyze financial cashflow over specified date ranges with income/expense breakdowns
@@ -198,6 +202,8 @@ Once authenticated, use these tools directly in Claude Desktop or Claude Code:
 | `create_transaction` | Create new transaction | `account_id`, `amount`, `description`, `date`, `category_id`, `merchant_name` |
 | `update_transaction` | Update existing transaction | `transaction_id`, `amount`, `description`, `category_id`, `date` |
 | `refresh_accounts` | Request account data refresh | None |
+| `get_categories` | List all transaction categories | None |
+| `get_category_groups` | List category groups with categories | None |
 
 ## 📝 Usage Examples
 
@@ -219,6 +225,11 @@ Use get_budgets to show my current budget status
 ### Analyze Cash Flow
 ```
 Get my cashflow for the last 3 months using get_cashflow
+```
+
+### List Available Categories
+```
+Show me all available categories using get_categories
 ```
 
 ## 📅 Date Formats

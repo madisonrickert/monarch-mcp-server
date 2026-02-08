@@ -728,6 +728,126 @@ def categorize_transaction(transaction_id: str, category_id: str) -> str:
 
 
 @mcp.tool()
+def set_transaction_category(
+    transaction_id: str,
+    category_id: str,
+    mark_reviewed: bool = True,
+) -> str:
+    """
+    Set the category for a transaction and optionally mark it as reviewed.
+
+    This is the primary tool for categorizing transactions during review.
+    Use get_categories() first to see available categories.
+
+    Args:
+        transaction_id: The ID of the transaction to categorize
+        category_id: The ID of the category to assign (use get_categories to find IDs)
+        mark_reviewed: Whether to also mark the transaction as reviewed (default: True)
+
+    Returns:
+        Updated transaction details.
+    """
+    try:
+
+        async def _set_category():
+            client = await get_monarch_client()
+
+            update_params = {
+                "transaction_id": transaction_id,
+                "category_id": category_id,
+            }
+
+            if mark_reviewed:
+                update_params["needs_review"] = False
+
+            return await client.update_transaction(**update_params)
+
+        result = run_async(_set_category())
+
+        return json.dumps(result, indent=2, default=str)
+    except Exception as e:
+        logger.error(f"Failed to set transaction category: {e}")
+        return f"Error setting category: {str(e)}"
+
+
+@mcp.tool()
+def update_transaction_notes(
+    transaction_id: str,
+    notes: str,
+    receipt_url: Optional[str] = None,
+) -> str:
+    """
+    Update the notes/memo for a transaction.
+
+    Suggested format: [Receipt: URL] Description
+    If receipt_url is provided, it will be prepended to the notes.
+
+    Args:
+        transaction_id: The ID of the transaction to update
+        notes: The note/memo text to add
+        receipt_url: Optional URL to a receipt (will be formatted as [Receipt: URL])
+
+    Returns:
+        Updated transaction details.
+    """
+    try:
+
+        async def _update_notes():
+            client = await get_monarch_client()
+
+            # Format notes with receipt URL if provided
+            if receipt_url:
+                formatted_notes = f"[Receipt: {receipt_url}] {notes}"
+            else:
+                formatted_notes = notes
+
+            return await client.update_transaction(
+                transaction_id=transaction_id,
+                notes=formatted_notes,
+            )
+
+        result = run_async(_update_notes())
+
+        return json.dumps(result, indent=2, default=str)
+    except Exception as e:
+        logger.error(f"Failed to update transaction notes: {e}")
+        return f"Error updating notes: {str(e)}"
+
+
+@mcp.tool()
+def mark_transaction_reviewed(
+    transaction_id: str,
+) -> str:
+    """
+    Mark a transaction as reviewed (clears the needs_review flag).
+
+    Use this after reviewing a transaction that doesn't need category changes.
+
+    Args:
+        transaction_id: The ID of the transaction to mark as reviewed
+
+    Returns:
+        Updated transaction details.
+    """
+    try:
+
+        async def _mark_reviewed():
+            client = await get_monarch_client()
+
+            return await client.update_transaction(
+                transaction_id=transaction_id,
+                needs_review=False,
+            )
+
+        result = run_async(_mark_reviewed())
+
+        return json.dumps(result, indent=2, default=str)
+    except Exception as e:
+        logger.error(f"Failed to mark transaction as reviewed: {e}")
+        return f"Error marking reviewed: {str(e)}"
+
+
+@mcp.tool()
 def refresh_accounts() -> str:
     """Request account data refresh from financial institutions."""
     try:

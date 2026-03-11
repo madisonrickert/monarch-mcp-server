@@ -169,38 +169,41 @@ async def get_transaction_details(transaction_id: str) -> str:
 
 @mcp.tool()
 async def create_transaction(
+    date: str,
     account_id: str,
     amount: float,
-    description: str,
-    date: str,
-    category_id: Optional[str] = None,
-    merchant_name: Optional[str] = None,
+    merchant_name: str,
+    category_id: str,
+    notes: Optional[str] = None,
+    update_balance: Optional[bool] = False,
 ) -> str:
     """
     Create a new transaction in Monarch Money.
 
     Args:
+        date: Transaction date in YYYY-MM-DD format
         account_id: The account ID to add the transaction to
         amount: Transaction amount (positive for income, negative for expenses)
-        description: Transaction description
-        date: Transaction date in YYYY-MM-DD format
-        category_id: Optional category ID
-        merchant_name: Optional merchant name
+        merchant_name: Merchant or payee name
+        category_id: Category ID for the transaction
+        notes: Optional notes for the transaction
+        update_balance: Whether to update the account balance (default: false)
     """
     try:
         client = await get_monarch_client()
 
         transaction_data: Dict[str, Any] = {
+            "date": date,
             "account_id": account_id,
             "amount": amount,
-            "description": description,
-            "date": date,
+            "merchant_name": merchant_name,
+            "category_id": category_id,
         }
 
-        if category_id:
-            transaction_data["category_id"] = category_id
-        if merchant_name:
-            transaction_data["merchant_name"] = merchant_name
+        if notes:
+            transaction_data["notes"] = notes
+        if update_balance:
+            transaction_data["update_balance"] = update_balance
 
         result = await client.create_transaction(**transaction_data)
         return json_success(result)
@@ -211,34 +214,50 @@ async def create_transaction(
 @mcp.tool()
 async def update_transaction(
     transaction_id: str,
-    amount: Optional[float] = None,
-    description: Optional[str] = None,
     category_id: Optional[str] = None,
+    merchant_name: Optional[str] = None,
+    goal_id: Optional[str] = None,
+    amount: Optional[float] = None,
     date: Optional[str] = None,
+    hide_from_reports: Optional[bool] = None,
+    needs_review: Optional[bool] = None,
+    notes: Optional[str] = None,
 ) -> str:
     """
     Update an existing transaction in Monarch Money.
 
     Args:
         transaction_id: The ID of the transaction to update
-        amount: New transaction amount
-        description: New transaction description
         category_id: New category ID
+        merchant_name: New merchant or payee name
+        goal_id: Goal ID to associate with the transaction
+        amount: New transaction amount
         date: New transaction date in YYYY-MM-DD format
+        hide_from_reports: Whether to hide this transaction from reports
+        needs_review: Whether this transaction needs review
+        notes: Notes for the transaction
     """
     try:
         client = await get_monarch_client()
 
         update_data: Dict[str, Any] = {"transaction_id": transaction_id}
 
-        if amount is not None:
-            update_data["amount"] = amount
-        if description is not None:
-            update_data["description"] = description
         if category_id is not None:
             update_data["category_id"] = category_id
+        if merchant_name is not None:
+            update_data["merchant_name"] = merchant_name
+        if goal_id is not None:
+            update_data["goal_id"] = goal_id
+        if amount is not None:
+            update_data["amount"] = amount
         if date is not None:
             update_data["date"] = date
+        if hide_from_reports is not None:
+            update_data["hide_from_reports"] = hide_from_reports
+        if needs_review is not None:
+            update_data["needs_review"] = needs_review
+        if notes is not None:
+            update_data["notes"] = notes
 
         result = await client.update_transaction(**update_data)
         return json_success(result)

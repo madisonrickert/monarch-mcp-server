@@ -2,7 +2,7 @@
 
 # Monarch Money MCP Server
 
-A Model Context Protocol (MCP) server for integrating with the Monarch Money personal finance platform. This server provides seamless access to your financial accounts, transactions, budgets, and analytics through Claude Desktop.
+A Model Context Protocol (MCP) server for integrating with the Monarch Money personal finance platform. This server provides seamless access to your financial accounts, transactions, budgets, and analytics through Claude Desktop and Claude Code.
 
 My MonarchMoney referral: https://www.monarchmoney.com/referral/ufmn0r83yf?r_source=share
 
@@ -23,18 +23,25 @@ My MonarchMoney referral: https://www.monarchmoney.com/referral/ufmn0r83yf?r_sou
    ```
 
 2. **Install dependencies**:
+
+   **Using `pip`**:
    ```bash
    pip install -r requirements.txt
    pip install -e .
    ```
 
+   **Using `uv`** (alternative):
+   ```bash
+   uv sync
+   ```
+
 3. **Configure Claude Desktop**:
    Add this to your Claude Desktop configuration file:
-   
+
    **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   
+
    **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
-   
+
    ```json
    {
      "mcpServers": {
@@ -54,19 +61,92 @@ My MonarchMoney referral: https://www.monarchmoney.com/referral/ufmn0r83yf?r_sou
      }
    }
    ```
-   
+
    **Important**: Replace `/path/to/your/monarch-mcp-server` with your actual path!
 
 4. **Restart Claude Desktop**
 
+**OR**
+
+3. **Configure Claude Code** (CLI):
+   Add this to your Claude Code configuration file:
+
+   **Global** (all projects):
+
+   **macOS/Linux**: `~/.claude.json`
+
+   **Windows**: `%USERPROFILE%\.claude.json`
+
+   ```json
+   {
+     "mcpServers": {
+       "Monarch Money": {
+         "command": "/opt/homebrew/bin/uv",
+         "args": [
+           "run",
+           "--with",
+           "mcp[cli]",
+           "--with-editable",
+           "/path/to/your/monarch-mcp-server",
+           "mcp",
+           "run",
+           "/path/to/your/monarch-mcp-server/src/monarch_mcp_server/server.py"
+         ]
+       }
+     }
+   }
+   ```
+
+   **Project-level** (specific directory):
+
+   Create `.mcp.json` in your project directory:
+
+   ```json
+   {
+     "Monarch Money": {
+       "command": "/opt/homebrew/bin/uv",
+       "args": [
+         "run",
+         "--with",
+         "mcp[cli]",
+         "--with-editable",
+         "/path/to/your/monarch-mcp-server",
+         "mcp",
+         "run",
+         "/path/to/your/monarch-mcp-server/src/monarch_mcp_server/server.py"
+       ]
+     }
+   }
+   ```
+
+   **If installed via `pip`** instead of `uv`, use:
+   ```json
+   {
+     "command": "python",
+     "args": ["/path/to/your/monarch-mcp-server/src/monarch_mcp_server/server.py"]
+   }
+   ```
+
+   **Important**: Replace `/path/to/your/monarch-mcp-server` with your actual path!
+
+4. **Restart Claude Code**
+
 ### 2. One-Time Authentication Setup
 
-**Important**: For security and MFA support, authentication is done outside of Claude Desktop.
+**Important**: For security and MFA support, authentication is done outside of Claude.
 
 Open Terminal and run:
+
+**Using `python`**:
 ```bash
 cd /path/to/your/monarch-mcp-server
 python login_setup.py
+```
+
+**Using `uv`**:
+```bash
+cd /path/to/your/monarch-mcp-server
+uv run python login_setup.py
 ```
 
 Follow the prompts:
@@ -74,9 +154,9 @@ Follow the prompts:
 - Provide 2FA code if you have MFA enabled
 - Session will be saved automatically
 
-### 3. Start Using in Claude Desktop
+### 3. Start Using
 
-Once authenticated, use these tools directly in Claude Desktop:
+Once authenticated, use these tools directly in Claude Desktop or Claude Code:
 - `get_accounts` - View all your financial accounts
 - `get_transactions` - Recent transactions with filtering
 - `get_budgets` - Budget information and spending
@@ -102,7 +182,7 @@ Once authenticated, use these tools directly in Claude Desktop:
 - **One-Time Setup**: Authenticate once, use for weeks/months
 - **MFA Support**: Full support for two-factor authentication
 - **Session Persistence**: No need to re-authenticate frequently
-- **Secure**: Credentials never pass through Claude Desktop
+- **Secure**: Credentials never pass through Claude
 
 ## 🛠️ Available Tools
 
@@ -150,18 +230,18 @@ Get my cashflow for the last 3 months using get_cashflow
 
 ### Authentication Issues
 If you see "Authentication needed" errors:
-1. Run the setup command: `cd /path/to/your/monarch-mcp-server && python login_setup.py`
-2. Restart Claude Desktop
+1. Run the setup command: `cd /path/to/your/monarch-mcp-server && python login_setup.py` (or `uv run python login_setup.py`)
+2. Restart Claude Desktop or Claude Code
 3. Try using a tool like `get_accounts`
 
 ### Session Expired
 Sessions last for weeks, but if expired:
-1. Run the same setup command again
+1. Run the same setup command again: `python login_setup.py` (or `uv run python login_setup.py`)
 2. Enter your credentials and 2FA code
 3. Session will be refreshed automatically
 
 ### Common Error Messages
-- **"No valid session found"**: Run `login_setup.py` 
+- **"No valid session found"**: Run `python login_setup.py` (or `uv run python login_setup.py`) 
 - **"Invalid account ID"**: Use `get_accounts` to see valid account IDs
 - **"Date format error"**: Use YYYY-MM-DD format for dates
 
@@ -182,11 +262,11 @@ monarch-mcp-server/
 ### Session Management
 - Sessions are stored securely in `.mm/mm_session.pickle`
 - Automatic session discovery and loading
-- Sessions persist across Claude Desktop restarts
+- Sessions persist across Claude Desktop and Claude Code restarts
 - No need for frequent re-authentication
 
 ### Security Features
-- Credentials never transmitted through Claude Desktop
+- Credentials never transmitted through Claude Desktop or Claude Code
 - MFA/2FA fully supported
 - Session files are encrypted
 - Authentication handled in secure terminal environment
@@ -218,5 +298,5 @@ For issues:
 
 To update the server:
 1. Pull latest changes from repository
-2. Restart Claude Desktop
+2. Restart Claude Desktop or Claude Code
 3. Re-run authentication if needed: `python login_setup.py`

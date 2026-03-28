@@ -18,10 +18,6 @@ src_path = Path(__file__).parent / "src"
 sys.path.insert(0, str(src_path))
 
 from monarchmoney import MonarchMoney, RequireMFAException
-from monarchmoney.monarchmoney import MonarchMoneyEndpoints
-
-# The monarchmoney library hardcodes the old API domain. Patch it to the current one.
-MonarchMoneyEndpoints.BASE_URL = "https://api.monarch.com"
 from dotenv import load_dotenv
 from monarch_mcp_server.secure_session import secure_session
 

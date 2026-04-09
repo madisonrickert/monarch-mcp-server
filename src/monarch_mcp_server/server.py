@@ -465,6 +465,67 @@ def get_transaction_categories() -> str:
 
 
 @mcp.tool()
+def get_transaction_category_groups() -> str:
+    """Get all transaction category groups (parent groupings for categories)."""
+    try:
+
+        async def _get() -> Any:
+            client = await get_monarch_client()
+            return await client.get_transaction_category_groups()
+
+        data = run_async(_get())
+        groups = [
+            {"id": g.get("id"), "name": g.get("name"), "type": g.get("type")}
+            for g in data.get("categoryGroups", [])
+        ]
+        return json.dumps(groups, indent=2, default=str)
+    except Exception as e:
+        logger.error(f"Failed to get transaction category groups: {e}")
+        return f"Error getting transaction category groups: {str(e)}"
+
+
+@mcp.tool()
+def create_transaction_category(
+    group_id: str,
+    transaction_category_name: str,
+    icon: Optional[str] = None,
+    rollover_enabled: Optional[bool] = None,
+    rollover_type: Optional[str] = None,
+) -> str:
+    """
+    Create a new transaction category.
+
+    Args:
+        group_id: The category group ID this category belongs to
+        transaction_category_name: Name of the new category
+        icon: Optional emoji icon for the category
+        rollover_enabled: Optional, whether budget rollover is enabled
+        rollover_type: Optional rollover type (e.g. "monthly")
+    """
+    try:
+
+        async def _create() -> Any:
+            client = await get_monarch_client()
+            kwargs: Dict[str, Any] = {
+                "group_id": group_id,
+                "transaction_category_name": transaction_category_name,
+            }
+            if icon is not None:
+                kwargs["icon"] = icon
+            if rollover_enabled is not None:
+                kwargs["rollover_enabled"] = rollover_enabled
+            if rollover_type is not None:
+                kwargs["rollover_type"] = rollover_type
+            return await client.create_transaction_category(**kwargs)
+
+        result = run_async(_create())
+        return json.dumps(result, indent=2, default=str)
+    except Exception as e:
+        logger.error(f"Failed to create transaction category: {e}")
+        return f"Error creating transaction category: {str(e)}"
+
+
+@mcp.tool()
 def get_transaction_tags() -> str:
     """Get all available transaction tags from Monarch Money."""
     try:

@@ -18,6 +18,8 @@ from monarch_mcp_server.server import (
     set_transaction_tags,
     create_transaction_tag,
     categorize_transaction,
+    get_transaction_category_groups,
+    create_transaction_category,
 )
 
 
@@ -361,6 +363,49 @@ class TestCategorizeTransaction:
         mock_monarch_client.update_transaction.side_effect = Exception("boom")
         result = categorize_transaction("txn-1", "cat-2")
         assert "Error categorizing transaction" in result
+
+
+class TestGetTransactionCategoryGroups:
+    def test_returns_groups(self):
+        result = json.loads(get_transaction_category_groups())
+        assert len(result) == 2
+        assert result[0]["id"] == "grp-1"
+        assert result[0]["name"] == "Food"
+        assert result[0]["type"] == "expense"
+
+    def test_handles_api_error(self, mock_monarch_client):
+        mock_monarch_client.get_transaction_category_groups.side_effect = Exception("boom")
+        result = get_transaction_category_groups()
+        assert "Error getting transaction category groups" in result
+
+
+class TestCreateTransactionCategory:
+    def test_creates_category(self):
+        result = json.loads(create_transaction_category("grp-1", "Coffee"))
+        assert "createCategory" in result
+
+    def test_passes_required_args(self, mock_monarch_client):
+        create_transaction_category("grp-1", "Coffee")
+        mock_monarch_client.create_transaction_category.assert_called_once_with(
+            group_id="grp-1", transaction_category_name="Coffee"
+        )
+
+    def test_passes_optional_args(self, mock_monarch_client):
+        create_transaction_category(
+            "grp-1", "Coffee", icon="☕", rollover_enabled=True, rollover_type="monthly"
+        )
+        mock_monarch_client.create_transaction_category.assert_called_once_with(
+            group_id="grp-1",
+            transaction_category_name="Coffee",
+            icon="☕",
+            rollover_enabled=True,
+            rollover_type="monthly",
+        )
+
+    def test_handles_api_error(self, mock_monarch_client):
+        mock_monarch_client.create_transaction_category.side_effect = Exception("boom")
+        result = create_transaction_category("grp-1", "Coffee")
+        assert "Error creating transaction category" in result
 
 
 class TestRefreshAccounts:

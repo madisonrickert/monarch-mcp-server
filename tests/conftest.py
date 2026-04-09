@@ -149,6 +149,17 @@ def mock_monarch_client():
         "setTransactionTags": {"transaction": {"id": "txn-1"}}
     }
 
+    client.get_transaction_category_groups.return_value = {
+        "categoryGroups": [
+            {"id": "grp-1", "name": "Food", "type": "expense"},
+            {"id": "grp-2", "name": "Income", "type": "income"},
+        ]
+    }
+
+    client.create_transaction_category.return_value = {
+        "createCategory": {"category": {"id": "cat-new", "name": "Coffee"}}
+    }
+
     client.create_transaction_tag.return_value = {
         "createTransactionTag": {"tag": {"id": "tag-new", "name": "new", "color": "#0000ff"}}
     }

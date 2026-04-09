@@ -20,6 +20,7 @@ from monarch_mcp_server.server import (
     categorize_transaction,
     get_transaction_category_groups,
     create_transaction_category,
+    add_transaction_tag,
 )
 
 
@@ -406,6 +407,35 @@ class TestCreateTransactionCategory:
         mock_monarch_client.create_transaction_category.side_effect = Exception("boom")
         result = create_transaction_category("grp-1", "Coffee")
         assert "Error creating transaction category" in result
+
+
+class TestAddTransactionTag:
+    def test_appends_to_existing_tags(self, mock_monarch_client):
+        result = json.loads(add_transaction_tag("txn-1", "tag-2"))
+        assert "setTransactionTags" in result
+        mock_monarch_client.set_transaction_tags.assert_called_once_with(
+            transaction_id="txn-1", tag_ids=["tag-1", "tag-2"]
+        )
+
+    def test_no_duplicate_when_already_present(self, mock_monarch_client):
+        add_transaction_tag("txn-1", "tag-1")
+        mock_monarch_client.set_transaction_tags.assert_called_once_with(
+            transaction_id="txn-1", tag_ids=["tag-1"]
+        )
+
+    def test_handles_no_existing_tags(self, mock_monarch_client):
+        mock_monarch_client.get_transaction_details.return_value = {
+            "getTransaction": {"id": "txn-1", "tags": []}
+        }
+        add_transaction_tag("txn-1", "tag-2")
+        mock_monarch_client.set_transaction_tags.assert_called_once_with(
+            transaction_id="txn-1", tag_ids=["tag-2"]
+        )
+
+    def test_handles_api_error(self, mock_monarch_client):
+        mock_monarch_client.get_transaction_details.side_effect = Exception("boom")
+        result = add_transaction_tag("txn-1", "tag-2")
+        assert "Error adding transaction tag" in result
 
 
 class TestRefreshAccounts:

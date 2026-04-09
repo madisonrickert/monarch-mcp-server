@@ -145,6 +145,13 @@ def mock_monarch_client():
         ]
     }
 
+    client.get_transaction_details.return_value = {
+        "getTransaction": {
+            "id": "txn-1",
+            "tags": [{"id": "tag-1", "name": "business"}],
+        }
+    }
+
     client.set_transaction_tags.return_value = {
         "setTransactionTags": {"transaction": {"id": "txn-1"}}
     }

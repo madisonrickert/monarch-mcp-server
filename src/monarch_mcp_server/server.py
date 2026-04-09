@@ -577,6 +577,35 @@ def set_transaction_tags(transaction_id: str, tag_ids: list[str]) -> str:
 
 
 @mcp.tool()
+def add_transaction_tag(transaction_id: str, tag_id: str) -> str:
+    """
+    Add a tag to a transaction, preserving any tags already on it.
+
+    Args:
+        transaction_id: The ID of the transaction
+        tag_id: The tag ID to add
+    """
+    try:
+
+        async def _add() -> Any:
+            client = await get_monarch_client()
+            details = await client.get_transaction_details(transaction_id)
+            txn = details.get("getTransaction") or {}
+            existing = [t.get("id") for t in (txn.get("tags") or []) if t.get("id")]
+            if tag_id not in existing:
+                existing.append(tag_id)
+            return await client.set_transaction_tags(
+                transaction_id=transaction_id, tag_ids=existing
+            )
+
+        result = run_async(_add())
+        return json.dumps(result, indent=2, default=str)
+    except Exception as e:
+        logger.error(f"Failed to add transaction tag: {e}")
+        return f"Error adding transaction tag: {str(e)}"
+
+
+@mcp.tool()
 def create_transaction_tag(name: str, color: str) -> str:
     """
     Create a new transaction tag.

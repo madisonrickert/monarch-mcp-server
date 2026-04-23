@@ -32,7 +32,6 @@ from monarch_mcp_server.tools.transactions import (  # noqa: F401
     get_transaction_details,
     create_transaction,
     update_transaction,
-    set_transaction_category,
     categorize_transaction,
     update_transaction_notes,
     mark_transaction_reviewed,
@@ -50,11 +49,9 @@ from monarch_mcp_server.tools.splits import (  # noqa: F401
     split_transaction,
 )
 from monarch_mcp_server.tools.tags import (  # noqa: F401
-    get_tags,
     get_transaction_tags,
     set_transaction_tags,
     add_transaction_tag,
-    create_tag,
     create_transaction_tag,
 )
 from monarch_mcp_server.tools.rules import (  # noqa: F401
@@ -64,9 +61,7 @@ from monarch_mcp_server.tools.rules import (  # noqa: F401
     delete_transaction_rule,
 )
 from monarch_mcp_server.tools.categories import (  # noqa: F401
-    get_categories,
     get_transaction_categories,
-    get_category_groups,
     get_transaction_category_groups,
     create_transaction_category,
 )

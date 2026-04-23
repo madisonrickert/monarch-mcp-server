@@ -327,43 +327,6 @@ async def categorize_transaction(transaction_id: str, category_id: str) -> str:
 
 
 @mcp.tool()
-async def set_transaction_category(
-    transaction_id: str,
-    category_id: str,
-    mark_reviewed: bool = True,
-) -> str:
-    """
-    Set the category for a transaction and optionally mark it as reviewed.
-
-    This is the primary tool for categorizing transactions during review.
-    Use get_categories() first to see available categories.
-
-    Args:
-        transaction_id: The ID of the transaction to categorize
-        category_id: The ID of the category to assign (use get_categories to find IDs)
-        mark_reviewed: Whether to also mark the transaction as reviewed (default: True)
-
-    Returns:
-        Updated transaction details.
-    """
-    try:
-        client = await get_monarch_client()
-
-        update_params: Dict[str, Any] = {
-            "transaction_id": transaction_id,
-            "category_id": category_id,
-        }
-
-        if mark_reviewed:
-            update_params["needs_review"] = False
-
-        result = await client.update_transaction(**update_params)
-        return json_success(result)
-    except Exception as e:
-        return json_error("set_transaction_category", e)
-
-
-@mcp.tool()
 async def update_transaction_notes(
     transaction_id: str,
     notes: str,

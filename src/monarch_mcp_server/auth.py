@@ -15,7 +15,10 @@ from monarch_mcp_server.secure_session import secure_session
 
 class LoginForm(BaseModel):
     email: str = Field(description="Monarch Money email address")
-    password: str = Field(description="Monarch Money password")
+    password: str = Field(
+        description="Monarch Money password",
+        json_schema_extra={"format": "password"},
+    )
 
 
 class MFAForm(BaseModel):
@@ -28,6 +31,7 @@ class TokenForm(BaseModel):
             "Monarch Money session token. Grab it from browser DevTools → "
             "Application → Local Storage for app.monarchmoney.com, key 'token'."
         ),
+        json_schema_extra={"format": "password"},
     )
 
 

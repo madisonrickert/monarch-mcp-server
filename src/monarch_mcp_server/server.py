@@ -13,7 +13,6 @@ from monarch_mcp_server.client import get_monarch_client  # noqa: F401
 # Re-export all tool functions
 from monarch_mcp_server.tools.auth import (  # noqa: F401
     setup_authentication,
-    authenticate_with_google,
     check_auth_status,
     debug_session_loading,
     monarch_login,
